@@ -19,9 +19,11 @@ type Config struct {
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port int    `yaml:"port" json:"port"`
-	Mode string `yaml:"mode" json:"mode"`
-	Name string `yaml:"name" json:"name"`
+	Port         int    `yaml:"port" json:"port"`
+	Mode         string `yaml:"mode" json:"mode"`
+	Name         string `yaml:"name" json:"name"`
+	ReadTimeout  int    `yaml:"readTimeout" json:"readTimeout"`
+	WriteTimeout int    `yaml:"writeTimeout" json:"writeTimeout"`
 }
 
 // DatabaseConfig 数据库配置

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"gin-admin-pro/internal/pkg/config"
+	"gin-admin-pro/internal/server"
 )
 
 func main() {
@@ -36,8 +37,19 @@ func main() {
 	fmt.Printf("模式: %s\n", cfg.Server.Mode)
 
 	// TODO: 初始化数据库连接
-	// TODO: 初始化路由
-	// TODO: 启动服务器
 
-	fmt.Printf("服务器启动在端口 %d\n", cfg.Server.Port)
+	// 创建服务器实例
+	s := server.NewServer()
+
+	// 启动服务器（在 goroutine 中运行）
+	go func() {
+		if err := s.Start(); err != nil {
+			log.Fatalf("服务器启动失败: %v", err)
+		}
+	}()
+
+	// 等待关闭信号
+	s.WaitForShutdown()
+
+	fmt.Println("程序退出")
 }
