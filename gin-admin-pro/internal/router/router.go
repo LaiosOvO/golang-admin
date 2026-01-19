@@ -57,10 +57,12 @@ func InitRouter() *gin.Engine {
 				// 初始化DAO
 				userDAO := apidao.NewUserDAO(service.Services.MySQLClient.GetDB())
 				roleDAO := apidao.NewRoleDAO(service.Services.MySQLClient.GetDB())
+				menuDAO := apidao.NewMenuDAO(service.Services.MySQLClient.GetDB())
 
 				// 初始化控制器
 				userCtrl := apisystem.NewUserController(userDAO, service.Services.TokenService)
 				roleCtrl := apisystem.NewRoleController(roleDAO)
+				menuCtrl := apisystem.NewMenuController(menuDAO)
 
 				// 用户管理路由（需要认证）
 				user := system.Group("/user")
@@ -91,11 +93,19 @@ func InitRouter() *gin.Engine {
 				menu := system.Group("/menu")
 				menu.Use(middleware.Auth()) // 认证中间件
 				{
-					menu.GET("/list", nil)                         // TODO: 实现菜单列表
-					menu.GET("/get", nil)                          // TODO: 实现获取菜单详情
-					menu.POST("/create", middleware.AdminOnly())   // TODO: 实现创建菜单（仅管理员）
-					menu.PUT("/update", middleware.AdminOnly())    // TODO: 实现更新菜单（仅管理员）
-					menu.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除菜单（仅管理员）
+					menu.GET("/list", menuCtrl.List)                                // 实现菜单列表
+					menu.GET("/get", menuCtrl.Get)                                  // 实现获取菜单详情
+					menu.POST("/create", middleware.AdminOnly(), menuCtrl.Create)   // 实现创建菜单（仅管理员）
+					menu.PUT("/update", middleware.AdminOnly(), menuCtrl.Update)    // 实现更新菜单（仅管理员）
+					menu.DELETE("/delete", middleware.AdminOnly(), menuCtrl.Delete) // 实现删除菜单（仅管理员）
+					menu.GET("/list-all-simple", menuCtrl.ListAllSimple)            // 实现获取菜单精简列表
+				}
+
+				// 权限管理路由（需要认证）
+				permission := system.Group("/permission")
+				permission.Use(middleware.Auth()) // 认证中间件
+				{
+					permission.GET("/list-user-permissions", menuCtrl.ListUserPermissions) // 获取用户菜单权限
 				}
 
 				// 部门管理路由（需要认证）
