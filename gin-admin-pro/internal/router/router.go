@@ -58,11 +58,13 @@ func InitRouter() *gin.Engine {
 				userDAO := apidao.NewUserDAO(service.Services.MySQLClient.GetDB())
 				roleDAO := apidao.NewRoleDAO(service.Services.MySQLClient.GetDB())
 				menuDAO := apidao.NewMenuDAO(service.Services.MySQLClient.GetDB())
+				deptDAO := apidao.NewDeptDAO(service.Services.MySQLClient.GetDB())
 
 				// 初始化控制器
 				userCtrl := apisystem.NewUserController(userDAO, service.Services.TokenService)
 				roleCtrl := apisystem.NewRoleController(roleDAO)
 				menuCtrl := apisystem.NewMenuController(menuDAO)
+				deptCtrl := apisystem.NewDeptController(deptDAO)
 
 				// 用户管理路由（需要认证）
 				user := system.Group("/user")
@@ -112,11 +114,13 @@ func InitRouter() *gin.Engine {
 				dept := system.Group("/dept")
 				dept.Use(middleware.Auth()) // 认证中间件
 				{
-					dept.GET("/list", nil)                         // TODO: 实现部门列表
-					dept.GET("/get", nil)                          // TODO: 实现获取部门详情
-					dept.POST("/create", middleware.AdminOnly())   // TODO: 实现创建部门（仅管理员）
-					dept.PUT("/update", middleware.AdminOnly())    // TODO: 实现更新部门（仅管理员）
-					dept.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除部门（仅管理员）
+					dept.GET("/list", deptCtrl.List)                                // 实现部门列表
+					dept.GET("/get", deptCtrl.Get)                                  // 实现获取部门详情
+					dept.POST("/create", middleware.AdminOnly(), deptCtrl.Create)   // 实现创建部门（仅管理员）
+					dept.PUT("/update", middleware.AdminOnly(), deptCtrl.Update)    // 实现更新部门（仅管理员）
+					dept.DELETE("/delete", middleware.AdminOnly(), deptCtrl.Delete) // 实现删除部门（仅管理员）
+					dept.GET("/list-all-simple", deptCtrl.ListAllSimple)            // 实现获取部门精简列表
+					dept.GET("/users", deptCtrl.GetUsers)                           // 实现获取部门用户
 				}
 
 				// 认证路由（不需要认证）
