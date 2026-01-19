@@ -1,0 +1,104 @@
+server:
+  port: 8080
+  mode: release  # debug, release, test
+  name: "Gin Admin Pro"
+
+database:
+  mysql:
+    host: ${MYSQL_HOST}
+    port: ${MYSQL_PORT:3306}
+    database: ${MYSQL_DATABASE}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    charset: utf8mb4
+    parseTime: true
+    loc: Local
+    maxIdleConns: 20
+    maxOpenConns: 200
+    connMaxLifetime: 3600
+    
+  postgresql:
+    host: ${POSTGRESQL_HOST}
+    port: ${POSTGRESQL_PORT:5432}
+    database: ${POSTGRESQL_DATABASE}
+    username: ${POSTGRESQL_USERNAME}
+    password: ${POSTGRESQL_PASSWORD}
+    sslmode: require
+    maxIdleConns: 20
+    maxOpenConns: 200
+    extensions:
+      - postgis
+      - vector
+      
+  mongodb:
+    uri: ${MONGODB_URI}
+    database: ${MONGODB_DATABASE}
+    timeout: 30s
+    
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD}
+    database: ${REDIS_DATABASE:0}
+    poolSize: 200
+    minIdleConns: 20
+    
+  elasticsearch:
+    urls: ${ELASTICSEARCH_URLS}
+    username: ${ELASTICSEARCH_USERNAME}
+    password: ${ELASTICSEARCH_PASSWORD}
+    
+  milvus:
+    host: ${MILVUS_HOST}
+    port: ${MILVUS_PORT:19530}
+    database: ${MILVUS_DATABASE}
+
+kafka:
+  brokers:
+    - ${KAFKA_BROKER_1}
+    - ${KAFKA_BROKER_2}
+    - ${KAFKA_BROKER_3}
+  groupId: gin-admin-group
+
+ai:
+  enabled: true
+  provider: ${AI_PROVIDER:openai}
+  apiKey: ${AI_API_KEY}
+  baseUrl: ${AI_BASE_URL:https://api.openai.com/v1}
+  model: ${AI_MODEL:gpt-3.5-turbo}
+  maxTokens: 2048
+  temperature: 0.7
+
+jwt:
+  secret: ${JWT_SECRET}
+  accessTokenExpire: 7   # days
+  refreshTokenExpire: 30 # days
+
+log:
+  level: info
+  format: json
+  output: ["stdout", "file"]
+  filePath: "./logs/app.log"
+  maxSize: 100    # MB
+  maxBackups: 30
+  maxAge: 90      # days
+
+cors:
+  enabled: true
+  allowOrigins: ${CORS_ALLOW_ORIGINS}
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowHeaders: ["*"]
+  exposeHeaders: []
+  allowCredentials: true
+  maxAge: 86400
+
+rateLimit:
+  enabled: true
+  requests: 100   # requests per minute
+  window: 60      # seconds
+
+upload:
+  maxSize: 10     # MB
+  allowedTypes: ["image/jpeg", "image/png", "image/gif", "application/pdf", "text/plain"]
+  path: "./uploads"
+  urlPrefix: "/uploads"

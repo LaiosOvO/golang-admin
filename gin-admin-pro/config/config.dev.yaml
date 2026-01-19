@@ -1,0 +1,100 @@
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+  name: "Gin Admin Pro (Dev)"
+
+database:
+  mysql:
+    host: localhost
+    port: 3306
+    database: gin_admin_dev
+    username: root
+    password: password
+    charset: utf8mb4
+    parseTime: true
+    loc: Local
+    maxIdleConns: 10
+    maxOpenConns: 100
+    connMaxLifetime: 3600
+    
+  postgresql:
+    host: localhost
+    port: 5432
+    database: gin_admin_ext_dev
+    username: postgres
+    password: password
+    sslmode: disable
+    maxIdleConns: 10
+    maxOpenConns: 100
+    extensions:
+      - postgis
+      - vector
+      
+  mongodb:
+    uri: mongodb://localhost:27017
+    database: gin_admin_docs_dev
+    timeout: 30s
+    
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    database: 0
+    poolSize: 100
+    minIdleConns: 10
+    
+  elasticsearch:
+    urls: ["http://localhost:9200"]
+    username: ""
+    password: ""
+    
+  milvus:
+    host: localhost
+    port: 19530
+    database: gin_admin_vectors_dev
+
+kafka:
+  brokers:
+    - localhost:9092
+  groupId: gin-admin-dev-group
+
+ai:
+  enabled: true
+  provider: openai
+  apiKey: sk-dev-key
+  baseUrl: https://api.openai.com/v1
+  model: gpt-3.5-turbo
+  maxTokens: 2048
+  temperature: 0.7
+
+jwt:
+  secret: "dev-secret-key-change-in-production"
+  accessTokenExpire: 7   # days
+  refreshTokenExpire: 30 # days
+
+log:
+  level: debug
+  format: console
+  output: ["stdout", "file"]
+  filePath: "./logs/app-dev.log"
+  maxSize: 100    # MB
+  maxBackups: 10
+  maxAge: 30      # days
+
+cors:
+  enabled: true
+  allowOrigins: ["http://localhost:3000", "http://localhost:8080"]
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowHeaders: ["*"]
+  exposeHeaders: []
+  allowCredentials: true
+  maxAge: 86400
+
+rateLimit:
+  enabled: false  # 开发环境关闭限流
+
+upload:
+  maxSize: 50     # MB - 开发环境允许更大文件
+  allowedTypes: ["*"]  # 开发环境允许所有类型
+  path: "./uploads-dev"
+  urlPrefix: "/uploads-dev"

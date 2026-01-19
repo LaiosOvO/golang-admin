@@ -1,0 +1,90 @@
+server:
+  port: 8081
+  mode: test  # debug, release, test
+  name: "Gin Admin Pro (Test)"
+
+database:
+  mysql:
+    host: localhost
+    port: 3306
+    database: gin_admin_test
+    username: root
+    password: password
+    charset: utf8mb4
+    parseTime: true
+    loc: Local
+    maxIdleConns: 5
+    maxOpenConns: 20
+    connMaxLifetime: 3600
+    
+  postgresql:
+    host: localhost
+    port: 5432
+    database: gin_admin_ext_test
+    username: postgres
+    password: password
+    sslmode: disable
+    maxIdleConns: 5
+    maxOpenConns: 20
+    extensions:
+      - postgis
+      - vector
+      
+  mongodb:
+    uri: mongodb://localhost:27017
+    database: gin_admin_docs_test
+    timeout: 30s
+    
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    database: 1  # 使用不同的数据库
+    poolSize: 20
+    minIdleConns: 5
+    
+  elasticsearch:
+    urls: ["http://localhost:9201"]  # 测试环境使用不同端口
+    username: ""
+    password: ""
+    
+  milvus:
+    host: localhost
+    port: 19531  # 测试环境使用不同端口
+    database: gin_admin_vectors_test
+
+kafka:
+  brokers:
+    - localhost:9093  # 测试环境使用不同端口
+  groupId: gin-admin-test-group
+
+ai:
+  enabled: false  # 测试环境关闭AI功能
+
+jwt:
+  secret: "test-secret-key"
+  accessTokenExpire: 1   # days - 测试环境较短过期时间
+  refreshTokenExpire: 7 # days
+
+log:
+  level: debug
+  format: console
+  output: ["stdout"]  # 测试环境只输出到控制台
+
+cors:
+  enabled: true
+  allowOrigins: ["*"]
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowHeaders: ["*"]
+  exposeHeaders: []
+  allowCredentials: false
+  maxAge: 86400
+
+rateLimit:
+  enabled: false  # 测试环境关闭限流
+
+upload:
+  maxSize: 5     # MB - 测试环境限制较小
+  allowedTypes: ["image/jpeg", "image/png"]
+  path: "./uploads-test"
+  urlPrefix: "/uploads-test"
