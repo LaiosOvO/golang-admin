@@ -1,0 +1,102 @@
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+  name: "Gin Admin Pro"
+
+database:
+  mysql:
+    host: localhost
+    port: 3306
+    database: gin_admin
+    username: root
+    password: password
+    charset: utf8mb4
+    parseTime: true
+    loc: Local
+    maxIdleConns: 10
+    maxOpenConns: 100
+    connMaxLifetime: 3600
+    
+  postgresql:
+    host: localhost
+    port: 5432
+    database: gin_admin_ext
+    username: postgres
+    password: password
+    sslmode: disable
+    maxIdleConns: 10
+    maxOpenConns: 100
+    extensions:
+      - postgis
+      - vector
+      
+  mongodb:
+    uri: mongodb://localhost:27017
+    database: gin_admin_docs
+    timeout: 30s
+    
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    database: 0
+    poolSize: 100
+    minIdleConns: 10
+    
+  elasticsearch:
+    urls: ["http://localhost:9200"]
+    username: ""
+    password: ""
+    
+  milvus:
+    host: localhost
+    port: 19530
+    database: gin_admin_vectors
+
+kafka:
+  brokers:
+    - localhost:9092
+  groupId: gin-admin-group
+
+ai:
+  enabled: true
+  provider: openai
+  apiKey: sk-xxx
+  baseUrl: https://api.openai.com/v1
+  model: gpt-3.5-turbo
+  maxTokens: 2048
+  temperature: 0.7
+
+jwt:
+  secret: "your-secret-key-here"
+  accessTokenExpire: 7   # days
+  refreshTokenExpire: 30 # days
+
+log:
+  level: info
+  format: json
+  output: ["stdout", "file"]
+  filePath: "./logs/app.log"
+  maxSize: 100    # MB
+  maxBackups: 10
+  maxAge: 30      # days
+
+cors:
+  enabled: true
+  allowOrigins: ["*"]
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowHeaders: ["*"]
+  exposeHeaders: []
+  allowCredentials: false
+  maxAge: 86400
+
+rateLimit:
+  enabled: true
+  requests: 100   # requests per minute
+  window: 60      # seconds
+
+upload:
+  maxSize: 10     # MB
+  allowedTypes: ["image/jpeg", "image/png", "image/gif", "application/pdf"]
+  path: "./uploads"
+  urlPrefix: "/uploads"
