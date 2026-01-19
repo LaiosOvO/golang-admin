@@ -7,6 +7,7 @@ import (
 
 	"gin-admin-pro/internal/pkg/config"
 	"gin-admin-pro/internal/server"
+	"gin-admin-pro/internal/service"
 )
 
 func main() {
@@ -35,6 +36,11 @@ func main() {
 	fmt.Printf("环境: %s\n", env)
 	fmt.Printf("端口: %d\n", cfg.Server.Port)
 	fmt.Printf("模式: %s\n", cfg.Server.Mode)
+
+	// 初始化服务
+	if err := service.InitServices(); err != nil {
+		log.Fatalf("初始化服务失败: %v", err)
+	}
 
 	// TODO: 初始化数据库连接
 

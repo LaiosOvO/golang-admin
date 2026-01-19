@@ -11,6 +11,7 @@ import (
 
 	"gin-admin-pro/internal/pkg/config"
 	"gin-admin-pro/internal/router"
+	"gin-admin-pro/internal/service"
 )
 
 // Server 服务器结构
@@ -57,6 +58,11 @@ func (s *Server) Stop() error {
 	defer cancel()
 
 	fmt.Println("正在关闭服务器...")
+
+	// 清理服务
+	if err := service.CleanupServices(); err != nil {
+		fmt.Printf("清理服务失败: %v\n", err)
+	}
 
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		return fmt.Errorf("服务器关闭失败: %v", err)
