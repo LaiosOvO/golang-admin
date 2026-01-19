@@ -1,6 +1,7 @@
 package router
 
 import (
+	apinfra "gin-admin-pro/internal/api/v1/infra"
 	apisystem "gin-admin-pro/internal/api/v1/system"
 	apidao "gin-admin-pro/internal/dao/system"
 	"gin-admin-pro/internal/middleware"
@@ -135,9 +136,14 @@ func InitRouter() *gin.Engine {
 			infra := v1.Group("/infra")
 			infra.Use(middleware.Auth()) // 认证中间件
 			{
+				// 初始化文件控制器
+				fileCtrl := apinfra.NewFileController(service.Services.OSSStorage)
+
 				file := infra.Group("/file")
 				{
-					file.POST("/upload", nil) // TODO: 实现文件上传
+					file.POST("/upload", fileCtrl.Upload)                  // 上传单个文件
+					file.POST("/upload-multiple", fileCtrl.UploadMultiple) // 上传多个文件
+					file.DELETE("/delete", fileCtrl.Delete)                // 删除文件
 				}
 			}
 

@@ -6,6 +6,7 @@ import (
 	"gin-admin-pro/internal/pkg/config"
 	"gin-admin-pro/internal/pkg/token"
 	"gin-admin-pro/plugin/mysql"
+	"gin-admin-pro/plugin/oss"
 	"gin-admin-pro/plugin/redis"
 )
 
@@ -17,6 +18,7 @@ type ServiceContainer struct {
 	TokenService *token.TokenService
 	RedisClient  *redis.Client
 	MySQLClient  *mysql.Client
+	OSSStorage   oss.OSSInterface
 }
 
 // InitServices 初始化服务
@@ -60,11 +62,18 @@ func InitServices() error {
 		return fmt.Errorf("初始化MySQL客户端失败: %w", err)
 	}
 
+	// 初始化OSS存储
+	ossStorage, err := oss.GetDefaultStorage()
+	if err != nil {
+		return fmt.Errorf("初始化OSS存储失败: %w", err)
+	}
+
 	// 设置全局服务实例
 	Services = &ServiceContainer{
 		TokenService: tokenService,
 		RedisClient:  redisClient,
 		MySQLClient:  mysqlClient,
+		OSSStorage:   ossStorage,
 	}
 
 	return nil
