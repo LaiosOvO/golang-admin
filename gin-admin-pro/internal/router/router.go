@@ -1,8 +1,11 @@
 package router
 
 import (
+	apisystem "gin-admin-pro/internal/api/v1/system"
+	apidao "gin-admin-pro/internal/dao/system"
 	"gin-admin-pro/internal/middleware"
 	"gin-admin-pro/internal/pkg/config"
+	"gin-admin-pro/internal/service"
 	"net/http"
 	"time"
 
@@ -51,27 +54,37 @@ func InitRouter() *gin.Engine {
 			// 系统管理模块
 			system := v1.Group("/system")
 			{
+				// 初始化DAO
+				userDAO := apidao.NewUserDAO(service.Services.MySQLClient.GetDB())
+				roleDAO := apidao.NewRoleDAO(service.Services.MySQLClient.GetDB())
+
+				// 初始化控制器
+				userCtrl := apisystem.NewUserController(userDAO, service.Services.TokenService)
+				roleCtrl := apisystem.NewRoleController(roleDAO)
+
 				// 用户管理路由（需要认证）
 				user := system.Group("/user")
 				user.Use(middleware.Auth()) // 认证中间件
 				{
-					user.GET("/page", nil)                         // TODO: 实现用户分页查询
-					user.GET("/get", nil)                          // TODO: 实现获取用户详情
-					user.POST("/create", middleware.AdminOnly())   // TODO: 实现创建用户（仅管理员）
-					user.PUT("/update", middleware.Auth())         // TODO: 实现更新用户
-					user.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除用户（仅管理员）
+					user.GET("/page", userCtrl.Page)                                // 实现用户分页查询
+					user.GET("/get", userCtrl.Get)                                  // 实现获取用户详情
+					user.POST("/create", middleware.AdminOnly(), userCtrl.Create)   // 实现创建用户（仅管理员）
+					user.PUT("/update", userCtrl.Update)                            // 实现更新用户
+					user.DELETE("/delete", middleware.AdminOnly(), userCtrl.Delete) // 实现删除用户（仅管理员）
 				}
 
 				// 角色管理路由（需要认证）
 				role := system.Group("/role")
 				role.Use(middleware.Auth()) // 认证中间件
 				{
-					role.GET("/page", nil)                         // TODO: 实现角色分页查询
-					role.GET("/get", nil)                          // TODO: 实现获取角色详情
-					role.POST("/create", middleware.AdminOnly())   // TODO: 实现创建角色（仅管理员）
-					role.PUT("/update", middleware.AdminOnly())    // TODO: 实现更新角色（仅管理员）
-					role.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除角色（仅管理员）
-					role.GET("/list-all-simple", nil)              // TODO: 实现获取角色精简列表
+					role.GET("/page", roleCtrl.Page)                                                         // 实现角色分页查询
+					role.GET("/get", roleCtrl.Get)                                                           // 实现获取角色详情
+					role.POST("/create", middleware.AdminOnly(), roleCtrl.Create)                            // 实现创建角色（仅管理员）
+					role.PUT("/update", middleware.AdminOnly(), roleCtrl.Update)                             // 实现更新角色（仅管理员）
+					role.DELETE("/delete", middleware.AdminOnly(), roleCtrl.Delete)                          // 实现删除角色（仅管理员）
+					role.GET("/list-all-simple", roleCtrl.ListAllSimple)                                     // 实现获取角色精简列表
+					role.PUT("/assign-menu/:roleId", middleware.AdminOnly(), roleCtrl.AssignMenuPermissions) // 分配菜单权限
+					role.GET("/menu-permissions/:roleId", roleCtrl.GetMenuPermissions)                       // 获取菜单权限
 				}
 
 				// 菜单管理路由（需要认证）

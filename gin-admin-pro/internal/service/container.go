@@ -5,6 +5,7 @@ import (
 
 	"gin-admin-pro/internal/pkg/config"
 	"gin-admin-pro/internal/pkg/token"
+	"gin-admin-pro/plugin/mysql"
 	"gin-admin-pro/plugin/redis"
 )
 
@@ -15,6 +16,7 @@ var Services *ServiceContainer
 type ServiceContainer struct {
 	TokenService *token.TokenService
 	RedisClient  *redis.Client
+	MySQLClient  *mysql.Client
 }
 
 // InitServices 初始化服务
@@ -38,10 +40,31 @@ func InitServices() error {
 	// 初始化Token服务
 	tokenService := token.NewTokenService(redisClient)
 
+	// 初始化MySQL客户端
+	mysqlConfig := &mysql.Config{
+		Host:         cfg.Database.MySQL.Host,
+		Port:         cfg.Database.MySQL.Port,
+		Username:     cfg.Database.MySQL.Username,
+		Password:     cfg.Database.MySQL.Password,
+		Database:     cfg.Database.MySQL.Database,
+		Charset:      cfg.Database.MySQL.Charset,
+		ParseTime:    cfg.Database.MySQL.ParseTime,
+		Loc:          cfg.Database.MySQL.Loc,
+		MaxIdleConns: cfg.Database.MySQL.MaxIdleConns,
+		MaxOpenConns: cfg.Database.MySQL.MaxOpenConns,
+		MaxLifetime:  cfg.Database.MySQL.ConnMaxLifetime,
+	}
+
+	mysqlClient, err := mysql.NewClient(mysqlConfig)
+	if err != nil {
+		return fmt.Errorf("初始化MySQL客户端失败: %w", err)
+	}
+
 	// 设置全局服务实例
 	Services = &ServiceContainer{
 		TokenService: tokenService,
 		RedisClient:  redisClient,
+		MySQLClient:  mysqlClient,
 	}
 
 	return nil
@@ -49,8 +72,20 @@ func InitServices() error {
 
 // CleanupServices 清理服务
 func CleanupServices() error {
-	if Services != nil && Services.RedisClient != nil {
-		return Services.RedisClient.Close()
+	var err error
+
+	if Services != nil {
+		if Services.RedisClient != nil {
+			if redisErr := Services.RedisClient.Close(); redisErr != nil {
+				err = redisErr
+			}
+		}
+		if Services.MySQLClient != nil {
+			if mysqlErr := Services.MySQLClient.Close(); mysqlErr != nil {
+				err = mysqlErr
+			}
+		}
 	}
-	return nil
+
+	return err
 }
