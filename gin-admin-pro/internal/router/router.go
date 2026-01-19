@@ -1,6 +1,7 @@
 package router
 
 import (
+	"gin-admin-pro/internal/middleware"
 	"gin-admin-pro/internal/pkg/config"
 	"net/http"
 	"time"
@@ -21,7 +22,9 @@ func InitRouter() *gin.Engine {
 
 	// 添加中间件
 	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	r.Use(middleware.Recovery())        // 自定义异常处理中间件
+	r.Use(middleware.RateLimit())       // 限流中间件
+	r.Use(middleware.OperationLogger()) // 操作日志中间件
 
 	// CORS 中间件
 	if cfg.CORS.Enabled {
@@ -48,67 +51,72 @@ func InitRouter() *gin.Engine {
 			// 系统管理模块
 			system := v1.Group("/system")
 			{
-				// 用户管理路由
+				// 用户管理路由（需要认证）
 				user := system.Group("/user")
+				user.Use(middleware.Auth()) // 认证中间件
 				{
-					user.GET("/page", nil)      // TODO: 实现用户分页查询
-					user.GET("/get", nil)       // TODO: 实现获取用户详情
-					user.POST("/create", nil)   // TODO: 实现创建用户
-					user.PUT("/update", nil)    // TODO: 实现更新用户
-					user.DELETE("/delete", nil) // TODO: 实现删除用户
+					user.GET("/page", nil)                         // TODO: 实现用户分页查询
+					user.GET("/get", nil)                          // TODO: 实现获取用户详情
+					user.POST("/create", middleware.AdminOnly())   // TODO: 实现创建用户（仅管理员）
+					user.PUT("/update", middleware.Auth())         // TODO: 实现更新用户
+					user.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除用户（仅管理员）
 				}
 
-				// 角色管理路由
+				// 角色管理路由（需要认证）
 				role := system.Group("/role")
+				role.Use(middleware.Auth()) // 认证中间件
 				{
-					role.GET("/page", nil)            // TODO: 实现角色分页查询
-					role.GET("/get", nil)             // TODO: 实现获取角色详情
-					role.POST("/create", nil)         // TODO: 实现创建角色
-					role.PUT("/update", nil)          // TODO: 实现更新角色
-					role.DELETE("/delete", nil)       // TODO: 实现删除角色
-					role.GET("/list-all-simple", nil) // TODO: 实现获取角色精简列表
+					role.GET("/page", nil)                         // TODO: 实现角色分页查询
+					role.GET("/get", nil)                          // TODO: 实现获取角色详情
+					role.POST("/create", middleware.AdminOnly())   // TODO: 实现创建角色（仅管理员）
+					role.PUT("/update", middleware.AdminOnly())    // TODO: 实现更新角色（仅管理员）
+					role.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除角色（仅管理员）
+					role.GET("/list-all-simple", nil)              // TODO: 实现获取角色精简列表
 				}
 
-				// 菜单管理路由
+				// 菜单管理路由（需要认证）
 				menu := system.Group("/menu")
+				menu.Use(middleware.Auth()) // 认证中间件
 				{
-					menu.GET("/list", nil)      // TODO: 实现菜单列表
-					menu.GET("/get", nil)       // TODO: 实现获取菜单详情
-					menu.POST("/create", nil)   // TODO: 实现创建菜单
-					menu.PUT("/update", nil)    // TODO: 实现更新菜单
-					menu.DELETE("/delete", nil) // TODO: 实现删除菜单
+					menu.GET("/list", nil)                         // TODO: 实现菜单列表
+					menu.GET("/get", nil)                          // TODO: 实现获取菜单详情
+					menu.POST("/create", middleware.AdminOnly())   // TODO: 实现创建菜单（仅管理员）
+					menu.PUT("/update", middleware.AdminOnly())    // TODO: 实现更新菜单（仅管理员）
+					menu.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除菜单（仅管理员）
 				}
 
-				// 部门管理路由
+				// 部门管理路由（需要认证）
 				dept := system.Group("/dept")
+				dept.Use(middleware.Auth()) // 认证中间件
 				{
-					dept.GET("/list", nil)      // TODO: 实现部门列表
-					dept.GET("/get", nil)       // TODO: 实现获取部门详情
-					dept.POST("/create", nil)   // TODO: 实现创建部门
-					dept.PUT("/update", nil)    // TODO: 实现更新部门
-					dept.DELETE("/delete", nil) // TODO: 实现删除部门
+					dept.GET("/list", nil)                         // TODO: 实现部门列表
+					dept.GET("/get", nil)                          // TODO: 实现获取部门详情
+					dept.POST("/create", middleware.AdminOnly())   // TODO: 实现创建部门（仅管理员）
+					dept.PUT("/update", middleware.AdminOnly())    // TODO: 实现更新部门（仅管理员）
+					dept.DELETE("/delete", middleware.AdminOnly()) // TODO: 实现删除部门（仅管理员）
 				}
 
-				// 认证路由
+				// 认证路由（不需要认证）
 				auth := system.Group("/auth")
 				{
-					auth.POST("/login", nil)  // TODO: 实现用户登录
-					auth.POST("/logout", nil) // TODO: 实现用户登出
+					auth.POST("/login", nil)                // TODO: 实现用户登录
+					auth.POST("/logout", middleware.Auth()) // TODO: 实现用户登出（需要认证）
 				}
 			}
 
-			// 基础设施模块
+			// 基础设施模块（需要认证）
 			infra := v1.Group("/infra")
+			infra.Use(middleware.Auth()) // 认证中间件
 			{
-				// 文件上传
 				file := infra.Group("/file")
 				{
 					file.POST("/upload", nil) // TODO: 实现文件上传
 				}
 			}
 
-			// AI 模块
+			// AI 模块（需要认证）
 			ai := v1.Group("/ai")
+			ai.Use(middleware.Auth()) // 认证中间件
 			{
 				ai.POST("/chat", nil) // TODO: 实现AI对话
 			}
