@@ -1,0 +1,671 @@
+openapi: 3.0.3
+info:
+  title: Gin-Admin API
+  description: |
+    Gin-Admin 是一个基于 Gin 框架的企业级后台管理系统API。
+    
+    ## 功能特性
+    - 用户管理：用户的增删改查、状态管理
+    - 角色管理：角色权限分配、数据权限控制
+    - 菜单管理：动态菜单配置、权限控制
+    - 部门管理：树形部门结构管理
+    - 文件管理：多存储后端支持
+    - 操作日志：详细的操作审计
+    - AI集成：智能对话功能
+    - 插件化架构：支持多种数据库和中间件
+    
+    ## 认证方式
+    API使用JWT Token进行认证。请在请求头中添加：
+    ```
+    Authorization: Bearer <your_token>
+    ```
+    
+    ## 错误码说明
+    | 错误码 | 说明 |
+    |--------|------|
+    | 0 | 成功 |
+    | 1001 | 未知错误 |
+    | 1002 | 参数错误 |
+    | 1003 | 数据不存在 |
+    | 1004 | 数据已存在 |
+    | 1005 | 操作失败 |
+    | 1006 | 权限不足 |
+    | 1007 | Token已过期 |
+    | 1008 | Token无效 |
+    | 2001 | 用户不存在 |
+    | 2002 | 用户已存在 |
+    | 2003 | 用户已被禁用 |
+    | 2004 | 密码错误 |
+    | 2005 | 账户已被锁定 |
+    
+  version: 1.0.0
+  contact:
+    name: Gin-Admin Team
+    email: support@gin-admin.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: 开发环境
+  - url: https://api.gin-admin.com
+    description: 生产环境
+
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 用户管理
+    description: 用户管理相关接口
+  - name: 角色管理
+    description: 角色管理相关接口
+  - name: 菜单管理
+    description: 菜单管理相关接口
+  - name: 部门管理
+    description: 部门管理相关接口
+  - name: 文件管理
+    description: 文件管理相关接口
+  - name: AI对话
+    description: AI对话相关接口
+  - name: 系统管理
+    description: 系统管理相关接口
+
+paths:
+  /api/v1/system/auth/login:
+    post:
+      tags:
+        - 认证
+      summary: 用户登录
+      description: 用户登录接口，返回JWT Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: 用户名
+                  example: admin
+                password:
+                  type: string
+                  description: 密码
+                  example: 123456
+                captcha:
+                  type: string
+                  description: 验证码（可选）
+                  example: ""
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "登录成功"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  expiresTime: 1640995200000
+        '400':
+          description: 参数错误
+        '401':
+          description: 认证失败
+
+  /api/v1/system/auth/logout:
+    post:
+      tags:
+        - 认证
+      summary: 用户登出
+      description: 用户登出接口，将Token加入黑名单
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+  /api/v1/system/auth/refresh:
+    post:
+      tags:
+        - 认证
+      summary: 刷新Token
+      description: 刷新用户Token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "刷新成功"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  expiresTime: 1640995200000
+
+  /api/v1/system/user/page:
+    get:
+      tags:
+        - 用户管理
+      summary: 用户分页查询
+      description: 分页查询用户列表
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pageNo
+          in: query
+          description: 页码
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: 每页数量
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: username
+          in: query
+          description: 用户名
+          required: false
+          schema:
+            type: string
+        - name: nickname
+          in: query
+          description: 昵称
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: 邮箱
+          required: false
+          schema:
+            type: string
+        - name: mobile
+          in: query
+          description: 手机号
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 状态(0:禁用 1:启用)
+          required: false
+          schema:
+            type: integer
+            enum: [0, 1]
+        - name: deptId
+          in: query
+          description: 部门ID
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              example:
+                code: 0
+                msg: "查询成功"
+                data:
+                  list:
+                    - id: 1
+                      username: admin
+                      nickname: 管理员
+                      email: admin@example.com
+                      mobile: "13800138000"
+                      status: 1
+                      createdAt: "2023-01-01T00:00:00Z"
+                  total: 1
+
+  /api/v1/system/user/get:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取用户详情
+      description: 根据ID获取用户详细信息
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: 用户ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "查询成功"
+                data:
+                  id: 1
+                  username: admin
+                  nickname: 管理员
+                  email: admin@example.com
+                  mobile: "13800138000"
+                  status: 1
+                  deptId: 1
+                  createdAt: "2023-01-01T00:00:00Z"
+
+  /api/v1/system/user/create:
+    post:
+      tags:
+        - 用户管理
+      summary: 创建用户
+      description: 创建新用户
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "创建成功"
+                data:
+                  id: 2
+
+  /api/v1/system/user/update:
+    put:
+      tags:
+        - 用户管理
+      summary: 更新用户
+      description: 更新用户信息
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: 更新成功
+
+  /api/v1/system/user/delete:
+    delete:
+      tags:
+        - 用户管理
+      summary: 删除用户
+      description: 删除指定用户
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: 用户ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+
+  /api/v1/system/role/page:
+    get:
+      tags:
+        - 角色管理
+      summary: 角色分页查询
+      description: 分页查询角色列表
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pageNo
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [0, 1]
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+
+  /api/v1/system/role/create:
+    post:
+      tags:
+        - 角色管理
+      summary: 创建角色
+      description: 创建新角色
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '200':
+          description: 创建成功
+
+  /api/v1/system/menu/list:
+    get:
+      tags:
+        - 菜单管理
+      summary: 获取菜单列表
+      description: 获取菜单树形结构列表
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "查询成功"
+                data:
+                  - id: 1
+                    name: 系统管理
+                    path: "/system"
+                    children:
+                      - id: 2
+                        name: 用户管理
+                        path: "/system/user"
+
+  /api/v1/system/dept/list:
+    get:
+      tags:
+        - 部门管理
+      summary: 获取部门列表
+      description: 获取部门树形结构列表
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 查询成功
+
+  /api/v1/infra/file/upload:
+    post:
+      tags:
+        - 文件管理
+      summary: 文件上传
+      description: 上传单个文件
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 上传的文件
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "上传成功"
+                data:
+                  url: "http://localhost:8080/uploads/2023/01/01/filename.txt"
+                  fileName: "filename.txt"
+                  fileSize: 1024
+
+  /api/v1/ai/chat:
+    post:
+      tags:
+        - AI对话
+      summary: AI对话
+      description: 与AI进行对话
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: 用户消息
+                  example: "你好"
+                conversationId:
+                  type: string
+                  description: 对话ID（可选）
+                  example: "conv_123456"
+                model:
+                  type: string
+                  description: AI模型（可选）
+                  example: "gpt-3.5-turbo"
+      responses:
+        '200':
+          description: 对话成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                code: 0
+                msg: "对话成功"
+                data:
+                  reply: "你好！我是AI助手，有什么可以帮助您的吗？"
+                  conversationId: "conv_123456"
+
+  /health:
+    get:
+      tags:
+        - 系统管理
+      summary: 健康检查
+      description: 系统健康检查接口
+      responses:
+        '200':
+          description: 系统正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+components:
+  schemas:
+    Response:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 响应码
+          example: 0
+        msg:
+          type: string
+          description: 响应消息
+          example: "操作成功"
+        data:
+          type: object
+          description: 响应数据
+          nullable: true
+
+    PageResponse:
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                list:
+                  type: array
+                  items:
+                    type: object
+                total:
+                  type: integer
+                  description: 总数量
+                pageNo:
+                  type: integer
+                  description: 当前页码
+                pageSize:
+                  type: integer
+                  description: 每页数量
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - password
+        - nickname
+      properties:
+        username:
+          type: string
+          description: 用户名
+          example: "testuser"
+        password:
+          type: string
+          description: 密码
+          example: "123456"
+        nickname:
+          type: string
+          description: 昵称
+          example: "测试用户"
+        email:
+          type: string
+          format: email
+          description: 邮箱
+          example: "test@example.com"
+        mobile:
+          type: string
+          description: 手机号
+          example: "13800138000"
+        deptId:
+          type: integer
+          description: 部门ID
+          example: 1
+        status:
+          type: integer
+          description: 状态(0:禁用 1:启用)
+          enum: [0, 1]
+          default: 1
+        remark:
+          type: string
+          description: 备注
+          example: "测试用户"
+
+    UpdateUserRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateUserRequest'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+              description: 用户ID
+              example: 1
+
+    CreateRoleRequest:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: 角色编码
+          example: "test_role"
+        name:
+          type: string
+          description: 角色名称
+          example: "测试角色"
+        description:
+          type: string
+          description: 角色描述
+          example: "测试角色描述"
+        dataScope:
+          type: integer
+          description: 数据权限范围
+          enum: [1, 2, 3, 4, 5]
+          default: 1
+        status:
+          type: integer
+          description: 状态(0:禁用 1:启用)
+          enum: [0, 1]
+          default: 1
+        remark:
+          type: string
+          description: 备注
+          example: "测试角色"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Token认证
