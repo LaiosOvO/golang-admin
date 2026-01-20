@@ -1,0 +1,267 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: gin-admin-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: gin_admin
+      MYSQL_USER: gin_admin
+      MYSQL_PASSWORD: gin_admin123
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docs/sql:/docker-entrypoint-initdb.d:ro
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - gin-admin-network
+
+  # PostgreSQL数据库（带PostGIS和pgvector扩展）
+  postgresql:
+    image: pgvector/pgvector:pg16
+    container_name: gin-admin-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gin_admin
+      POSTGRES_USER: gin_admin
+      POSTGRES_PASSWORD: gin_admin123
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+      - ./docs/sql/postgis.sql:/docker-entrypoint-initdb.d/01-postgis.sql:ro
+      - ./docs/sql/pgvector.sql:/docker-entrypoint-initdb.d/02-pgvector.sql:ro
+    networks:
+      - gin-admin-network
+
+  # MongoDB数据库
+  mongodb:
+    image: mongo:6
+    container_name: gin-admin-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: gin_admin
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docs/sql/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - gin-admin-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: gin-admin-redis
+    restart: unless-stopped
+    command: redis-server --requirepass redis123 --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gin-admin-network
+
+  # Elasticsearch搜索引擎
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: gin-admin-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - gin-admin-network
+
+  # Milvus向量数据库
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: gin-admin-etcd
+    restart: unless-stopped
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd_data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    networks:
+      - gin-admin-network
+
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: gin-admin-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - gin-admin-network
+
+  milvus:
+    image: milvusdb/milvus:v2.3.0
+    container_name: gin-admin-milvus
+    restart: unless-stopped
+    depends_on:
+      - etcd
+      - minio
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    command: ["milvus", "run", "standalone"]
+    networks:
+      - gin-admin-network
+
+  # Zookeeper（Kafka依赖）
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: gin-admin-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    networks:
+      - gin-admin-network
+
+  # Kafka消息队列
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: gin-admin-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - gin-admin-network
+
+  # 主应用
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: gin-admin-app
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - postgresql
+      - mongodb
+      - redis
+      - elasticsearch
+      - milvus
+      - kafka
+    environment:
+      GIN_MODE: release
+      CONFIG_PATH: /app/config/config.prod.yaml
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    networks:
+      - gin-admin-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx反向代理（可选）
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: gin-admin-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - gin-admin-network
+
+# 数据卷定义
+volumes:
+  mysql_data:
+    driver: local
+  postgresql_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  etcd_data:
+    driver: local
+  minio_data:
+    driver: local
+  milvus_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_logs:
+    driver: local
+  kafka_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+# 网络定义
+networks:
+  gin-admin-network:
+    driver: bridge
